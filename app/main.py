@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from twilio.twiml.voice_response import VoiceResponse
 import openai, os
 from dotenv import load_dotenv
@@ -13,21 +13,22 @@ app = FastAPI()
 
 @app.post("/voice")
 async def voice():
-    print(">>> Incoming call hit /voice <<<")
-    vr = VoiceResponse()
-    
-async def voice():
     vr = VoiceResponse()
 
+    if not is_working_hours():
+        vr.say(
+            "Hi, this is Debanjan Bhowmick. Working hours are ten AM to six PM, Monday to Saturday.",
+            voice="alice"
+        )
+        vr.hangup()
+        return Response(content=str(vr), media_type="application/xml")
 
     vr.say(
-        "Hi, I am Debanjan Bhowmick. "
-        "I’m unavailable right now, so my assistant is speaking on my behalf. "
-        "Please go ahead.",
+        "Hi, I am Debanjan Bhowmick. I’m unavailable right now, so my assistant is speaking on my behalf. Please go ahead.",
         voice="alice"
     )
     vr.gather(input="speech", action="/process", timeout=6)
-    return str(vr)
+    return Response(content=str(vr), media_type="application/xml")
 
 @app.post("/process")
 async def process(request: Request):
@@ -39,9 +40,9 @@ async def process(request: Request):
     if not user_input:
         vr.say("Just checking. Please let me know how I can help.", voice="alice")
         vr.gather(input="speech", action="/process", timeout=6)
-        return str(vr)
+        return Response(content=str(vr), media_type="application/xml")
 
-    response = openai.ChatCompletion.create(
+    ai_response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -49,7 +50,7 @@ async def process(request: Request):
         ]
     )
 
-    reply = response.choices[0].message.content
+    reply = ai_response.choices[0].message.content
     vr.say(reply, voice="alice")
 
     if any(word in reply.lower() for word in ["next round", "connect", "call back"]):
@@ -58,4 +59,4 @@ async def process(request: Request):
     else:
         vr.gather(input="speech", action="/process", timeout=6)
 
-    return str(vr)
+    return Response(content=str(vr), media_type="application/xml")
