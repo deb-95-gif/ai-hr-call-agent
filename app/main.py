@@ -1,16 +1,37 @@
 from fastapi import FastAPI, Request, Response
 from twilio.twiml.voice_response import VoiceResponse
-from dotenv import load_dotenv
-import os
-
-from openai import OpenAI
-from app.prompts import SYSTEM_PROMPT
-
-load_dotenv()
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
+
+
+def rule_based_reply(text: str) -> str:
+    t = text.lower()
+
+    if "role" in t or "position" in t:
+        return "Thanks. Could you please share the team and tech stack?"
+
+    if "experience" in t or "years" in t:
+        return "He has five point six years total, with over five years in data engineering."
+
+    if "current company" in t or "working" in t:
+        return "He is currently working as a Data Engineer at Globus Info Services."
+
+    if "ctc" in t or "salary" in t or "package" in t:
+        return "Current CTC is seven point five LPA. Expected is around sixteen LPA."
+
+    if "notice" in t or "joining" in t:
+        return "His last working day would be 9th Jan 2025."
+
+    if "why" in t and ("change" in t or "switch" in t):
+        return "Early switches were for learning. Now he is focused on long term stability."
+
+    if "aws" in t or "sql" in t or "python" in t:
+        return "Yes, he has around five years experience in AWS, SQL, Python, and data engineering."
+
+    if "infosys" in t or "interview" in t or "next round" in t:
+        return "That sounds good. Could you please share the next steps?"
+
+    return "Thanks for the details. Debanjan will personally connect with you shortly."
 
 
 @app.post("/voice")
@@ -54,36 +75,11 @@ async def process(request: Request):
         )
         return Response(content=str(vr), media_type="application/xml")
 
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_input}
-            ],
-            timeout=10
-        )
-
-        reply = completion.choices[0].message.content.strip()
-
-    except Exception as e:
-        print("OpenAI error:", e)
-
-        vr.say(
-            "Thank you for sharing the details. "
-            "Debanjan will personally connect with you shortly.",
-            voice="alice"
-        )
-        vr.hangup()
-
-        return Response(content=str(vr), media_type="application/xml")
+    reply = rule_based_reply(user_input)
 
     vr.say(reply, voice="alice")
 
-    if any(
-        keyword in reply.lower()
-        for keyword in ["next round", "connect", "call back", "follow up"]
-    ):
+    if "connect" in reply.lower() or "next steps" in reply.lower():
         vr.say(
             "Thank you for your time. Debanjan will connect with you.",
             voice="alice"
