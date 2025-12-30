@@ -15,15 +15,6 @@ app = FastAPI()
 async def voice():
     vr = VoiceResponse()
 
-    if not is_working_hours():
-        vr.say(
-            "Hi, this is Debanjan Bhowmick. "
-            "Working hours are ten AM to six PM, Monday to Saturday. "
-            "Please call back during working hours.",
-            voice="alice"
-        )
-        vr.hangup()
-        return str(vr)
 
     vr.say(
         "Hi, I am Debanjan Bhowmick. "
