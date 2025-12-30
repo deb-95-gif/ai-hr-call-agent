@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Request, Response
 from twilio.twiml.voice_response import VoiceResponse
-import openai
-import os
 from dotenv import load_dotenv
+import os
 
+from openai import OpenAI
 from app.prompts import SYSTEM_PROMPT
 
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
 
@@ -40,7 +41,6 @@ async def process(request: Request):
 
     vr = VoiceResponse()
 
-    # If speech was empty or unclear
     if not user_input:
         vr.say(
             "Sorry, I didn’t catch that. Could you please repeat?",
@@ -55,7 +55,7 @@ async def process(request: Request):
         return Response(content=str(vr), media_type="application/xml")
 
     try:
-        ai_response = openai.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -64,11 +64,10 @@ async def process(request: Request):
             timeout=10
         )
 
-        reply = ai_response.choices[0].message.content.strip()
+        reply = completion.choices[0].message.content.strip()
 
     except Exception as e:
-        # IMPORTANT: Never crash. Always return TwiML.
-        print("OpenAI error:", str(e))
+        print("OpenAI error:", e)
 
         vr.say(
             "Thank you for sharing the details. "
@@ -79,10 +78,8 @@ async def process(request: Request):
 
         return Response(content=str(vr), media_type="application/xml")
 
-    # Speak AI reply
     vr.say(reply, voice="alice")
 
-    # Decide whether to continue or end call
     if any(
         keyword in reply.lower()
         for keyword in ["next round", "connect", "call back", "follow up"]
