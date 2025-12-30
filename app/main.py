@@ -70,10 +70,19 @@ async def process(request: Request):
     reply = rule_based_reply(user_input)
     vr.say(reply, voice="alice")
 
-    if "connect" in reply.lower() or "next steps" in reply.lower():
+    # Hang up ONLY if HR clearly ends the call
+    if any(word in user_input.lower() for word in ["thank you", "bye", "goodbye", "that is all"]):
         vr.say("Thank you for your time. Debanjan will connect with you.", voice="alice")
         vr.hangup()
-    else:
-        vr.gather(input="speech", action="/process", timeout=6, speechTimeout="auto")
+        return Response(content=str(vr), media_type="application/xml")
+
+    # Otherwise continue listening
+    vr.gather(
+        input="speech",
+        action="/process",
+        timeout=6,
+        speechTimeout="auto"
+    )
 
     return Response(content=str(vr), media_type="application/xml")
+
