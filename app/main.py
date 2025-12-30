@@ -1,8 +1,18 @@
 from fastapi import FastAPI, Request, Response
 from twilio.twiml.voice_response import VoiceResponse
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
+def get_lwd_text():
+    today = datetime.today()
+    days_to_friday = 4 - today.weekday()
+    current_week_friday = today + timedelta(days=days_to_friday)
+    lwd = current_week_friday + timedelta(days=7)
+
+    day = lwd.day
+    suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    return f"{day}{suffix} {lwd.strftime('%B')}"
 
 def rule_based_reply(text: str) -> str:
     t = text.lower()
@@ -19,8 +29,8 @@ def rule_based_reply(text: str) -> str:
     if "ctc" in t or "salary" in t or "package" in t:
         return "Current CTC is seven point five LPA. Expected is around sixteen LPA."
 
-    if "notice" in t or "joining" in t:
-        return "His last working day would be 9th Jan 2025."
+    if "notice" in t or "joining" in t or "lwd" in t:
+        return f"His last working day would be {get_lwd_text()}."
 
     if "why" in t and ("change" in t or "switch" in t):
         return "Early switches were for learning. Now he is focused on long term stability."
@@ -33,27 +43,17 @@ def rule_based_reply(text: str) -> str:
 
     return "Thanks for the details. Debanjan will personally connect with you shortly."
 
-
 @app.post("/voice")
 async def voice():
     vr = VoiceResponse()
-
     vr.say(
         "Hi, I am Debanjan Bhowmick. "
         "I’m unavailable right now, so my assistant is speaking on my behalf. "
         "Please go ahead.",
         voice="alice"
     )
-
-    vr.gather(
-        input="speech",
-        action="/process",
-        timeout=6,
-        speechTimeout="auto"
-    )
-
+    vr.gather(input="speech", action="/process", timeout=6, speechTimeout="auto")
     return Response(content=str(vr), media_type="application/xml")
-
 
 @app.post("/process")
 async def process(request: Request):
@@ -63,34 +63,17 @@ async def process(request: Request):
     vr = VoiceResponse()
 
     if not user_input:
-        vr.say(
-            "Sorry, I didn’t catch that. Could you please repeat?",
-            voice="alice"
-        )
-        vr.gather(
-            input="speech",
-            action="/process",
-            timeout=6,
-            speechTimeout="auto"
-        )
+        vr.say("Sorry, I didn’t catch that. Could you please repeat?", voice="alice")
+        vr.gather(input="speech", action="/process", timeout=6, speechTimeout="auto")
         return Response(content=str(vr), media_type="application/xml")
 
     reply = rule_based_reply(user_input)
-
     vr.say(reply, voice="alice")
 
     if "connect" in reply.lower() or "next steps" in reply.lower():
-        vr.say(
-            "Thank you for your time. Debanjan will connect with you.",
-            voice="alice"
-        )
+        vr.say("Thank you for your time. Debanjan will connect with you.", voice="alice")
         vr.hangup()
     else:
-        vr.gather(
-            input="speech",
-            action="/process",
-            timeout=6,
-            speechTimeout="auto"
-        )
+        vr.gather(input="speech", action="/process", timeout=6, speechTimeout="auto")
 
     return Response(content=str(vr), media_type="application/xml")
