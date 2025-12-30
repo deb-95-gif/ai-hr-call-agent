@@ -4,7 +4,6 @@ import openai, os
 from dotenv import load_dotenv
 
 from app.prompts import SYSTEM_PROMPT
-from app.utils import is_working_hours
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -15,16 +14,9 @@ app = FastAPI()
 async def voice():
     vr = VoiceResponse()
 
-    if not is_working_hours():
-        vr.say(
-            "Hi, this is Debanjan Bhowmick. Working hours are ten AM to six PM, Monday to Saturday.",
-            voice="alice"
-        )
-        vr.hangup()
-        return Response(content=str(vr), media_type="application/xml")
-
     vr.say(
-        "Hi, I am Debanjan Bhowmick. I’m unavailable right now, so my assistant is speaking on my behalf. Please go ahead.",
+        "Hi, I am Debanjan Bhowmick. "
+        "Please go ahead.",
         voice="alice"
     )
     vr.gather(input="speech", action="/process", timeout=6)

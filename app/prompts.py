@@ -21,7 +21,7 @@ Candidate profile (use ONLY when explicitly asked):
 - AWS experience: 5 years
 - Current CTC: 7.5 LPA
 - Expected CTC: 16 LPA
-- Notice period: Last working day is Friday of next week
+- Notice period: Last working day is Friday of next week, for example if today is 30/12/2026 , Last working day would be 9th January 2026 , follow this formula if HR asks LWD
 
 Reason for job changes (answer ONLY if asked):
 - Early switches were driven by learning
