@@ -1,3 +1,1 @@
-# AI HR Call Agent
-
-Inbound AI-powered HR call assistant for Debanjan Bhowmick.
+AI HR Call Agent – Updated with proper Twilio XML responses.
