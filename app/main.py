@@ -13,6 +13,10 @@ app = FastAPI()
 
 @app.post("/voice")
 async def voice():
+    print(">>> Incoming call hit /voice <<<")
+    vr = VoiceResponse()
+    
+async def voice():
     vr = VoiceResponse()
 
 
